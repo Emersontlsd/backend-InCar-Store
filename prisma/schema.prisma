@@ -1,0 +1,90 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 🛡️ Modelo da sua tabela de usuários (InCar Store)
+model User {
+  id              String      @id @default(uuid())
+  name            String
+  cpf             String      @unique
+  phone           String      @unique
+  email           String      @unique
+  birthDate       String
+  gender          String
+  cep             String
+  street          String
+  number          String
+  complement      String? // O "?" define que este campo é opcional no cadastro
+  neighborhood    String
+  city            String
+  state           String
+  acceptMarketing Boolean     @default(false)
+  role            String      @default("customer") // Define o nível de acesso ('admin' ou 'customer')
+  otpCode         String? // Armazena temporariamente o código de 6 dígitos
+  otpExpiresAt    DateTime? // Define a validade do código
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  orders          Order[]     @relation
+  @@map("users")
+}
+
+// 📂 Novo modelo de Categorias
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  slug      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  products  Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  name        String
+  price       Decimal     @db.Decimal(10, 2)
+  image       String
+  description String
+  
+  // 📦 Novos campos adicionados para o controle de estoque e categoria
+  stock       Int         @default(0) // Quantidade disponível em estoque
+  categoryId  Int?        @map("category_id")
+  category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  orderItems  OrderItem[]
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  @@map("products")
+}
+
+model Order {
+  id            Int         @id @default(autoincrement())
+  userId        String      @map("user_id") 
+  total         Decimal     @db.Decimal(10, 2)
+  status        String      @default("pending") // 'pending', 'processing', 'shipped', 'delivered', 'em_separacao'
+  paymentStatus String?     @default("pending") @map("payment_status")
+  
+  user          User        @relation(fields: [userId], references: [id])
+  items         OrderItem[]
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id              Int       @id @default(autoincrement())
+  orderId         Int       @map("order_id")
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId       Int       @map("product_id")
+  product         Product   @relation(fields: [productId], references: [id])
+  quantity        Int
+  priceAtPurchase Decimal   @db.Decimal(10, 2) @map("price_at_purchase")
+
+  @@map("order_items")
+}
