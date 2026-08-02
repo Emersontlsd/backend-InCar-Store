@@ -325,6 +325,7 @@ export async function simulatePixPayment(req: any, res: Response) {
 
 // 🔔 Webhook do Mercado Pago
 export async function mercadoPagoWebHook(req: any, res: Response) {
+  const signature = req.headers['x-signature'];
   try {
     const { type, data } = req.body;
 
