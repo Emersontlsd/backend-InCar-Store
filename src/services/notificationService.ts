@@ -1,8 +1,8 @@
 import { Resend } from "resend";
+import axios from "axios";
 
-// Inicializa o Resend. Se não houver a chave no .env, ele usará um modo de simulação.
 const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEN_API_KEY)
+  ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
 interface SendOtpPayload {
@@ -10,6 +10,31 @@ interface SendOtpPayload {
   toPhone: string;
   otpCode: string;
   userName: string;
+}
+
+// Função auxiliar para envio de WhatsApp (Evolution API / Z-API ou similar)
+async function sendWhatsAppMessage(phone: string, message: string) {
+  const whatsappApiUrl = process.env.WHATSAPP_API_URL;
+  const whatsappToken = process.env.WHATSAPP_API_TOKEN;
+
+  if (!whatsappApiUrl || !whatsappToken || !phone) {
+    return; // Se não configurado ou sem telefone, ignora
+  }
+
+  try {
+    const cleanPhone = phone.replace(/\D/g, ''); 
+    await axios.post(whatsappApiUrl, {
+      phone: cleanPhone,
+      message: message,
+    }, {
+      headers: {
+        Authorization: `Bearer ${whatsappToken}`
+      }
+    });
+    console.log(`📱 [WHATSAPP] Mensagem enviada para ${cleanPhone}`);
+  } catch (error) {
+    console.error("❌ Erro ao enviar WhatsApp:", error);
+  }
 }
 
 export const sendOtpNotification = async ({
@@ -27,31 +52,33 @@ export const sendOtpNotification = async ({
       <div style="background-color: #f4f4f5; padding: 15px; text-align: center; border-radius: 6px; margin: 20px 0;">
         <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #000;">${otpCode}</span>
       </div>
-      <p style="font-size: 12px; color: #999;">Este código é válido por 5 minutos e só pode ser usado uma vez. Se não foi você quem solicitou, ignore este e-mail.</p>
+      <p style="font-size: 12px; color: #999;">Este código é válido por 5 minutos e só pode ser usado uma vez.</p>
     </div>
   `;
 
-  // 1. Fluxo de Produção/Testes Reais (Se tiver a API KEY do Resend no .env)
+  const whatsappMessage = `🚗 *InCar Store*\n\nOlá ${userName}, seu código de acesso é: *${otpCode}*`;
+
+  // 1. Fluxo de Produção (Resend + WhatsApp juntos)
   if (resend) {
     try {
-      await resend.emails.send({
-        from: "InCar Store <onboarding@resend.dev>",
-        to: toEmail,
-        subject: subject,
-        html: htmlContent,
-      });
-      console.log(`✉️ [PRODUÇÃO] E-mail enviado com sucesso para ${toEmail}`);
+      await Promise.all([
+        resend.emails.send({
+          from: "InCar Store <onboarding@resend.dev>",
+          to: toEmail,
+          subject: subject,
+          html: htmlContent,
+        }),
+        sendWhatsAppMessage(toPhone, whatsappMessage)
+      ]);
 
-      // 💡 AQUI ENTRARÁ DISPARO DE WHATSAPP NO FUTURO:
-      // await enviarWhatsApp(toPhone, `Seu código InCar Store é: ${otpCode}`);
-
+      console.log(`✉️ [PRODUÇÃO] Notificações enviadas para ${toEmail} / ${toPhone}`);
       return;
     } catch (error) {
-      console.error("❌ Erro ao enviar e-mail via Resend:", error);
+      console.error("❌ Erro ao enviar via Resend:", error);
     }
   }
 
-  // 2. Fluxo de Fallback (Caso ainda não tenha criado a conta no Resend)
+  // 2. Fluxo de Fallback (Simulação no Console)
   console.log("\n--- ⚠️ MODO DE SIMULAÇÃO DE ENVIO ---");
   console.log(`👤 Para: ${userName}`);
   console.log(`📱 Celular: ${toPhone} | 📧 E-mail: ${toEmail}`);
