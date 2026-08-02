@@ -47,7 +47,8 @@ export const sendOtpNotification = async ({
 
   const htmlContent = `
     <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-      <h2 style="color: #1a1a1a;">Olá, ${userName}!</h2>
+    <h2 style="color: #1a1a1a;">Não responda a este e-mail</h2>  
+    <h2 style="color: #1a1a1a;">Olá, ${userName}!</h2>
       <p style="font-size: 16px; color: #555;">Você solicitou um acesso à <strong>InCar Store</strong>.</p>
       <div style="background-color: #f4f4f5; padding: 15px; text-align: center; border-radius: 6px; margin: 20px 0;">
         <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #000;">${otpCode}</span>
@@ -63,7 +64,7 @@ export const sendOtpNotification = async ({
     try {
       await Promise.all([
         resend.emails.send({
-          from: "InCar Store <onboarding@resend.dev>",
+          from: "InCar Store <admin@incar-store.com>",
           to: toEmail,
           subject: subject,
           html: htmlContent,
