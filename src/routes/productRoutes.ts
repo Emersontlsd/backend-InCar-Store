@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProducts, createProduct, updateProduct } from '../controllers/productController';
+import { getProducts, createProduct, updateProduct, deleteProduct } from '../controllers/productController';
 import { authMiddleware, adminMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -12,5 +12,8 @@ router.post('/', authMiddleware, adminMiddleware, createProduct);
 
 // Rota para editar produto (Admin)
 router.put('/:id', authMiddleware, adminMiddleware, updateProduct);
+
+// Rota para excluir produto (Admin) 👇 ADICIONE ESTA LINHA
+router.delete('/:id', authMiddleware, adminMiddleware, deleteProduct);
 
 export default router;

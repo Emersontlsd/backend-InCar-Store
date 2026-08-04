@@ -17,6 +17,37 @@ export async function getProducts(req: Request, res: Response) {
   }
 }
 
+// Excluir um produto pelo ID
+export async function deleteProduct(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    // Verifica se o produto existe antes de tentar deletar
+    const productExists = await prisma.product.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!productExists) {
+      return res.status(404).json({
+        message: "Produto não encontrado.",
+      });
+    }
+
+    await prisma.product.delete({
+      where: { id: Number(id) },
+    });
+
+    return res.status(200).json({
+      message: "Produto excluído com sucesso!",
+    });
+  } catch (error) {
+    console.error("Erro ao deletar produto: ", error);
+    return res.status(500).json({
+      message: "Erro interno ao excluir produto",
+    });
+  }
+}
+
 export async function createProduct(req: Request, res: Response) {
   try {
     const { name, price, categoryId, stock, image, description } = req.body;
@@ -115,7 +146,7 @@ export async function updateProduct(req: Request, res: Response) {
         stock: stock !== undefined ? Number(stock) : undefined,
         image: image !== undefined ? image : undefined,
         description: description !== undefined ? description : undefined,
-        categoryId: finalCategoryId
+        categoryId: finalCategoryId,
       },
       include: { category: true },
     });
